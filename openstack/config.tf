@@ -21,9 +21,18 @@ variable os_auth_url {
   default = "http://172.31.0.81:5000/v2.0"
 }
 
+variable cluster_DNS_servers {
+  type    = "list"
+  default = ["8.8.8.8", "8.8.4.4"]
+}
+
 variable keypair_name {
   type    = "string"
   default = "k8s_keypair"
+}
+
+variable ssh_key_file {
+  default = "~/.ssh/id_rsa.terraform"
 }
 
 variable image {
@@ -33,11 +42,6 @@ variable image {
     name   = "Ubuntu Xenial"
     flavor = "m1.medium"
   }
-}
-
-variable node_root_password {
-  type    = "string"
-  default = "root123"
 }
 
 variable "config" {

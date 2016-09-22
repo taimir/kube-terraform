@@ -1,0 +1,58 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: weave-net
+spec:
+  template:
+    metadata:
+      labels:
+        name: weave-net
+    spec:
+      hostNetwork: true
+      containers:
+        - name: weave
+          image: weaveworks/weave-kube:1.6.1
+          imagePullPolicy: Always
+          command:
+            - /home/weave/launch.sh
+          livenessProbe:
+            httpGet:
+              host: 127.0.0.1
+              path: /status
+              port: 6784
+          env:
+            - name: WEAVE_VERSION
+              value: 1.6.1
+            - name: IPALLOC_RANGE
+              value: 10.244.0.0/14
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: weavedb
+              mountPath: /weavedb
+            - name: cni-bin
+              mountPath: /opt
+            - name: cni-bin2
+              mountPath: /host_home
+            - name: cni-conf
+              mountPath: /etc
+          resources:
+            limits:
+              cpu: 200m
+            requests:
+              cpu: 25m
+          securityContext:
+            privileged: true
+      restartPolicy: Always
+      volumes:
+        - name: weavedb
+          emptyDir: {}
+        - name: cni-bin
+          hostPath:
+            path: /opt
+        - name: cni-bin2
+          hostPath:
+            path: /home
+        - name: cni-conf
+          hostPath:
+            path: /etc

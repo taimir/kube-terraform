@@ -27,17 +27,21 @@ resource "openstack_compute_instance_v2" "k8s-master" {
   image_name      = "${var.image["name"]}"
   flavor_name     = "${var.image["flavor"]}"
   key_pair        = "${var.keypair_name}"
-  security_groups = ["default"]
+  security_groups = ["default", "${openstack_compute_secgroup_v2.k8s_secgroup.name}"]
 
   network {
     name = "${openstack_networking_network_v2.k8s_private_net.name}"
   }
 
   floating_ip = "${openstack_networking_floatingip_v2.master_floatip.address}"
-  admin_pass  = "${node_root_password}"
 
   # Provision the instance and run kubeadm
   provisioner "remote-exec" {
+    connection {
+      user        = "ubuntu"
+      private_key = "${file(var.ssh_key_file)}"
+    }
+
     script = "provision_master.sh"
   }
 }
@@ -56,10 +60,14 @@ resource "openstack_compute_instance_v2" "k8s-minion" {
   }
 
   floating_ip = "${element(openstack_networking_floatingip_v2.node_floatips.*.address, count.index)}"
-  admin_pass  = "${node_root_password}"
 
   # Provision the instance and run kubeadm
   provisioner "remote-exec" {
+    connection {
+      user        = "ubuntu"
+      private_key = "${file(var.ssh_key_file)}"
+    }
+
     script = "provision_node.sh"
   }
 }

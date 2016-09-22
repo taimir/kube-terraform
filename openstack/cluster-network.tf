@@ -1,3 +1,9 @@
+# Keypair for remote access
+resource "openstack_compute_keypair_v2" "k8s_keypair" {
+  name       = "k8s_keypair"
+  public_key = "${file("${var.ssh_key_file}.pub")}"
+}
+
 # Private network
 resource "openstack_networking_network_v2" "k8s_private_net" {
   name           = "${var.config["private_network_name"]}"
@@ -6,10 +12,11 @@ resource "openstack_networking_network_v2" "k8s_private_net" {
 }
 
 resource "openstack_networking_subnet_v2" "k8s_private_subnet" {
-  name       = "${var.config["private_network_name"]}_subnet"
-  network_id = "${openstack_networking_network_v2.k8s_private_net.id}"
-  cidr       = "10.33.0.0/24"
-  ip_version = 4
+  name            = "${var.config["private_network_name"]}_subnet"
+  network_id      = "${openstack_networking_network_v2.k8s_private_net.id}"
+  cidr            = "10.33.0.0/24"
+  ip_version      = 4
+  dns_nameservers = "${var.cluster_DNS_servers}"
 }
 
 # Router between private and external network
