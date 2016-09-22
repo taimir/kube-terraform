@@ -35,8 +35,19 @@ resource "openstack_compute_instance_v2" "k8s-master" {
 
   floating_ip = "${openstack_networking_floatingip_v2.master_floatip.address}"
 
+  # copies the cluster addons to master.
+  provisioner file {
+    connection {
+      user        = "ubuntu"
+      private_key = "${file(var.ssh_key_file)}"
+    }
+
+    source      = "addons"
+    destination = "/home/ubuntu"
+  }
+
   # Provision the instance and run kubeadm
-  provisioner "remote-exec" {
+  provisioner remote-exec {
     connection {
       user        = "ubuntu"
       private_key = "${file(var.ssh_key_file)}"

@@ -1,3 +1,13 @@
 #!/bin/bash
 
-echo "Hello world, I'm a node!"
+# Install prerequisites
+# 	* docker
+#	* socats
+#	* kubelet (systemd service)
+#	* kubectl (/usr/bin binary)
+# 	* kubeadm (/usr/bin binary)
+echo "Starting provisioning with kubeadm"
+curl -sSL https://get.docker.com/ | sh
+sudo apt-get install -y socat
+sudo docker run -v /usr/local:/target gcr.io/kubeadm/installer
+sudo systemctl daemon-reload && sudo systemctl enable kubelet && sudo systemctl restart kubelet
