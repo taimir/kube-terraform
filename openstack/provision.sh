@@ -2,7 +2,7 @@
 
 # Install prerequisites
 # 	* docker
-#	* socats
+#	* socat
 #	* kubelet (systemd service)
 #	* kubectl (/usr/bin binary)
 # 	* kubeadm (/usr/bin binary)

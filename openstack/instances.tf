@@ -1,4 +1,4 @@
-resource "openstack_compute_secgroup_v2" "k8s_secgroup" {
+resource openstack_compute_secgroup_v2 k8s_secgroup {
   name        = "k8s_secgroup"
   description = "Allows ssh access to the cluster with the correct keypair"
 
@@ -10,19 +10,19 @@ resource "openstack_compute_secgroup_v2" "k8s_secgroup" {
   }
 }
 
-resource "openstack_networking_floatingip_v2" "master_floatip" {
+resource openstack_networking_floatingip_v2 master_floatip {
   pool      = "public"
   tenant_id = "${var.os_project_id}"
 }
 
-resource "openstack_networking_floatingip_v2" "node_floatips" {
+resource openstack_networking_floatingip_v2 node_floatips {
   count     = "${var.config["nodes_count"]}"
   pool      = "public"
   tenant_id = "${var.os_project_id}"
 }
 
 # Create a k8s master
-resource "openstack_compute_instance_v2" "k8s-master" {
+resource openstack_compute_instance_v2 k8s-master {
   name            = "k8s-master"
   image_name      = "${var.image["name"]}"
   flavor_name     = "${var.image["flavor"]}"
@@ -38,7 +38,7 @@ resource "openstack_compute_instance_v2" "k8s-master" {
   # copies the cluster addons to master.
   provisioner file {
     connection {
-      user        = "ubuntu"
+      user        = "${var.ssh_user}"
       private_key = "${file(var.ssh_key_file)}"
     }
 
@@ -46,19 +46,33 @@ resource "openstack_compute_instance_v2" "k8s-master" {
     destination = "/home/ubuntu"
   }
 
-  # Provision the instance and run kubeadm
+  # Provision the instance
   provisioner remote-exec {
     connection {
-      user        = "ubuntu"
+      user        = "${var.ssh_user}"
       private_key = "${file(var.ssh_key_file)}"
     }
 
-    script = "provision_master.sh"
+    script = "provision.sh"
+  }
+
+  # Bootstrap with kubeadm
+  provisioner remote-exec {
+    connection {
+      user        = "${var.ssh_user}"
+      private_key = "${file(var.ssh_key_file)}"
+    }
+
+    inline = [
+      "sudo kubeadm init --pod-network-cidr ${var.pod_overlay_cidr} --token ${var.bootstrap_token}",
+      "kubectl create -f /home/ubuntu/addons/flannel-cfg.yaml",
+      "kubectl create -f /home/ubuntu/addons/flannel-ds.yaml",
+    ]
   }
 }
 
 # Create the k8s nodes
-resource "openstack_compute_instance_v2" "k8s-minion" {
+resource openstack_compute_instance_v2 k8s-minion {
   count           = "${var.config["nodes_count"]}"
   name            = "k8s-node-${count.index}"
   image_name      = "${var.image["name"]}"
@@ -72,13 +86,25 @@ resource "openstack_compute_instance_v2" "k8s-minion" {
 
   floating_ip = "${element(openstack_networking_floatingip_v2.node_floatips.*.address, count.index)}"
 
-  # Provision the instance and run kubeadm
-  provisioner "remote-exec" {
+  # Provision the instance
+  provisioner remote-exec {
     connection {
-      user        = "ubuntu"
+      user        = "${var.ssh_user}"
       private_key = "${file(var.ssh_key_file)}"
     }
 
-    script = "provision_node.sh"
+    script = "provision.sh"
+  }
+
+  # Bootstrap with kubeadm
+  provisioner remote-exec {
+    connection {
+      user        = "${var.ssh_user}"
+      private_key = "${file(var.ssh_key_file)}"
+    }
+
+    inline = [
+      "sudo kubeadm join --token ${var.bootstrap_token} ${openstack_compute_instance_v2.k8s-master.network/fixed_ip_v4}",
+    ]
   }
 }

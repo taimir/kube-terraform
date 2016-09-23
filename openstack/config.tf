@@ -31,6 +31,10 @@ variable keypair_name {
   default = "k8s_keypair"
 }
 
+variable ssh_user {
+  default = "ubuntu"
+}
+
 variable ssh_key_file {
   default = "~/.ssh/id_rsa.terraform"
 }
@@ -44,7 +48,17 @@ variable image {
   }
 }
 
-variable "config" {
+variable pod_overlay_cidr {
+  type    = "string"
+  default = "10.3.0.0/16"
+}
+
+variable bootstrap_token {
+  type    = "string"
+  default = "30f54b.f400ed0dc93169df"
+}
+
+variable config {
   type = "map"
 
   default = {
@@ -64,7 +78,7 @@ variable "config" {
 }
 
 # Configure the OpenStack Provider
-provider "openstack" {
+provider openstack {
   user_name   = "${var.os_user_name}"
   tenant_name = "${var.os_project_name}"
   password    = "${var.os_user_password}"
