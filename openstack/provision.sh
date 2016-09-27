@@ -7,7 +7,7 @@
 #	* kubectl (/usr/bin binary)
 # 	* kubeadm (/usr/bin binary)
 echo "Starting provisioning with kubeadm"
-curl -sSL https://get.docker.com/ | sh
-sudo apt-get install -y socat
-sudo docker run -v /usr/local:/target gcr.io/kubeadm/installer
-sudo systemctl daemon-reload && sudo systemctl enable kubelet && sudo systemctl restart kubelet
+sudo apt-get update
+sudo apt-get install -y docker.io socat apt-transport-https
+curl -s -L https://storage.googleapis.com/kubeadm/kubernetes-xenial-preview-bundle.txz | tar xJv
+sudo dpkg -i kubernetes-xenial-preview-bundle/*.deb

@@ -20,7 +20,7 @@ spec:
       hostNetwork: true
       containers:
       - name: kube-flannel
-        image: taimir93/flannel-amd64:v2
+        image: quay.io/coreos/flannel-git:latest
         command: [ "/opt/bin/flanneld", "--ip-masq", "--kube-subnet-mgr", "--iface=$(POD_IP)"]
         securityContext:
           privileged: true
