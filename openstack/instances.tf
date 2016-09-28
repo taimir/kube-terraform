@@ -1,28 +1,3 @@
-resource openstack_compute_secgroup_v2 k8s_secgroup {
-  name        = "k8s_secgroup"
-  description = "Allows ssh access to the cluster with the correct keypair"
-}
-
-resource openstack_networking_secgroup_rule_v2 secgroup_rule_ssh {
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "tcp"
-  port_range_min    = 22
-  port_range_max    = 22
-  remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = "${openstack_networking_secgroup_v2.k8s_secgroup.id}"
-}
-
-resource openstack_networking_secgroup_rule_v2 secgroup_rule_https {
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "tcp"
-  port_range_min    = 443
-  port_range_max    = 443
-  remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = "${openstack_networking_secgroup_v2.k8s_secgroup.id}"
-}
-
 resource openstack_networking_floatingip_v2 master_floatip {
   pool      = "public"
   tenant_id = "${var.os_project_id}"
@@ -40,7 +15,7 @@ resource openstack_compute_instance_v2 k8s-master {
   image_name      = "${var.image["name"]}"
   flavor_name     = "${var.image["flavor"]}"
   key_pair        = "${var.keypair_name}"
-  security_groups = ["default", "${openstack_compute_secgroup_v2.k8s_secgroup.name}"]
+  security_groups = ["default", "${openstack_networking_secgroup_v2.k8s_secgroup.name}"]
 
   network {
     name        = "${openstack_networking_network_v2.k8s_private_net.name}"
@@ -79,20 +54,20 @@ resource openstack_compute_instance_v2 k8s-master {
 
     inline = [
       "sudo kubeadm init --pod-network-cidr ${var.pod_overlay_cidr} --token ${var.bootstrap_token}",
-      "kubectl create -f /home/ubuntu/addons/flannel-cfg.yaml",
-      "kubectl create -f /home/ubuntu/addons/flannel-ds.yaml",
+      "kubectl create -f /home/ubuntu/addons/kube-flannel.yaml",
       "kubectl create -f /home/ubuntu/addons/dashboard-service.yaml",
       "kubectl create -f /home/ubuntu/addons/dashboard-controller.yaml",
     ]
   }
+
+  # Configure local kubectl
+  provisioner local-exec {
+    command = "./configure-kubectl.sh ${var.bootstrap_token} ${openstack_compute_instance_v2.k8s-master.access_ip_v4}"
+  }
 }
 
-output "command" {
-  value = "sudo kubeadm join --token ${var.bootstrap_token}"
-}
-
-output "master_ip" {
-  value = "${openstack_compute_instance_v2.k8s-master.access_ip_v4}"
+output SUCCESS {
+  value = "Run `kubectl proxy` on your local machine and access dashboard under http://localhost:8001/ui :)"
 }
 
 # Create the k8s nodes
@@ -103,7 +78,7 @@ resource openstack_compute_instance_v2 k8s-minion {
   image_name      = "${var.image["name"]}"
   flavor_name     = "${var.image["flavor"]}"
   key_pair        = "${var.keypair_name}"
-  security_groups = ["default", "${openstack_compute_secgroup_v2.k8s_secgroup.name}"]
+  security_groups = ["default", "${openstack_networking_secgroup_v2.k8s_secgroup.name}"]
 
   network {
     name = "${openstack_networking_network_v2.k8s_private_net.name}"
