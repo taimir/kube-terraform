@@ -30,7 +30,8 @@ resource openstack_compute_instance_v2 k8s-master {
   security_groups = ["default", "${openstack_compute_secgroup_v2.k8s_secgroup.name}"]
 
   network {
-    name = "${openstack_networking_network_v2.k8s_private_net.name}"
+    name        = "${openstack_networking_network_v2.k8s_private_net.name}"
+    fixed_ip_v4 = "${var.internal_master_ip}"
   }
 
   floating_ip = "${openstack_networking_floatingip_v2.master_floatip.address}"
@@ -71,8 +72,17 @@ resource openstack_compute_instance_v2 k8s-master {
   }
 }
 
+output "command" {
+  value = "sudo kubeadm join --token ${var.bootstrap_token}"
+}
+
+output "master_ip" {
+  value = "${openstack_compute_instance_v2.k8s-master.access_ip_v4}"
+}
+
 # Create the k8s nodes
 resource openstack_compute_instance_v2 k8s-minion {
+  depends_on      = ["openstack_compute_instance_v2.k8s-master"]
   count           = "${var.config["nodes_count"]}"
   name            = "k8s-node-${count.index}"
   image_name      = "${var.image["name"]}"
@@ -104,7 +114,7 @@ resource openstack_compute_instance_v2 k8s-minion {
     }
 
     inline = [
-      "sudo kubeadm join --token ${var.bootstrap_token} ${openstack_compute_instance_v2.k8s-master.network/fixed_ip_v4}",
+      "sudo kubeadm join --token ${var.bootstrap_token} ${var.internal_master_ip}",
     ]
   }
 }

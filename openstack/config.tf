@@ -58,6 +58,11 @@ variable bootstrap_token {
   default = "30f54b.f400ed0dc93169df"
 }
 
+variable internal_master_ip {
+  type    = "string"
+  default = "10.33.0.3"
+}
+
 variable config {
   type = "map"
 
