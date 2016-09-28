@@ -1,13 +1,26 @@
 resource openstack_compute_secgroup_v2 k8s_secgroup {
   name        = "k8s_secgroup"
   description = "Allows ssh access to the cluster with the correct keypair"
+}
 
-  rule {
-    from_port   = 22
-    to_port     = 22
-    ip_protocol = "tcp"
-    cidr        = "0.0.0.0/0"
-  }
+resource openstack_networking_secgroup_rule_v2 secgroup_rule_ssh {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 22
+  port_range_max    = 22
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = "${openstack_networking_secgroup_v2.k8s_secgroup.id}"
+}
+
+resource openstack_networking_secgroup_rule_v2 secgroup_rule_https {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 443
+  port_range_max    = 443
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = "${openstack_networking_secgroup_v2.k8s_secgroup.id}"
 }
 
 resource openstack_networking_floatingip_v2 master_floatip {
@@ -68,6 +81,8 @@ resource openstack_compute_instance_v2 k8s-master {
       "sudo kubeadm init --pod-network-cidr ${var.pod_overlay_cidr} --token ${var.bootstrap_token}",
       "kubectl create -f /home/ubuntu/addons/flannel-cfg.yaml",
       "kubectl create -f /home/ubuntu/addons/flannel-ds.yaml",
+      "kubectl create -f /home/ubuntu/addons/dashboard-service.yaml",
+      "kubectl create -f /home/ubuntu/addons/dashboard-controller.yaml",
     ]
   }
 }
