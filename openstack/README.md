@@ -57,8 +57,19 @@ terraform apply
 
 in the directory of this README file.
 
-If everything went well, you should be able to run `kubectl` as a proxy on your machine and access the [k8s dashboard](https://github.com/kubernetes/dashboard) on `http://localhost:8001/ui`:
+If everything went well, you should be able to run `kubectl` as a proxy on your machine and (after a 2-3 minutes or so) access the [k8s dashboard](https://github.com/kubernetes/dashboard) on `http://localhost:8001/ui`:
 
 ```{bash}
 kubectl proxy
+```
+
+You can also run `kubectl` in the command line to check the status of all pods.
+
+
+#### Troubleshooting
+If you cannot connect to dashboard, but the all pods are running, it's probably an issue with the POD overlay network. Try recreating it (run from this directory):
+
+```
+kubectl delete ds kube-flannel-ds --namespace=kube-system
+kubectl apply -f kube-flannel.yaml
 ```
