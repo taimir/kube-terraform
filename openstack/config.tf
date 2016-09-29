@@ -1,24 +1,6 @@
-variable os_user_name {
-  type = "string"
-}
-
-variable os_user_password {
-  type = "string"
-}
-
-variable os_project_name {
-  type    = "string"
-  default = "k8s-terraform"
-}
-
 variable os_project_id {
   type    = "string"
   default = "e23c0b230228475aafc01d560db6cd40"
-}
-
-variable os_auth_url {
-  type    = "string"
-  default = "http://172.31.0.81:5000/v2.0"
 }
 
 variable cluster_DNS_servers {
@@ -80,12 +62,4 @@ variable config {
 
     # k8s installation
   }
-}
-
-# Configure the OpenStack Provider
-provider openstack {
-  user_name   = "${var.os_user_name}"
-  tenant_name = "${var.os_project_name}"
-  password    = "${var.os_user_password}"
-  auth_url    = "${var.os_auth_url}"
 }
